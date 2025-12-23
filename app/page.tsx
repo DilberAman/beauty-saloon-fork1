@@ -50,15 +50,7 @@ export default function Home() {
         </div>
       </div>
 
-      <div id="book-online" className="section bg-white border-b border-gray-100">
-        <div className="container">
-           <div className="text-center mb-10">
-              <h2 className="sectionTitle">Book Online</h2>
-              <p className="sectionLead mx-auto">Select your service and preferred time below.</p>
-           </div>
-           <BookingForm />
-        </div>
-      </div>
+      
 
       <div className="section" id="about">
         <div className="container">
@@ -112,6 +104,15 @@ export default function Home() {
               </div>
             ))}
           </div>
+          <div id="book-online" className="section bg-white border-b border-gray-100">
+        <div className="container">
+           <div className="text-center mb-10">
+              <h2 className="sectionTitle">Book Online</h2>
+              <p className="sectionLead mx-auto">Select your service and preferred time below.</p>
+           </div>
+           <BookingForm />
+        </div>
+      </div>
         </div>
       </div>
     </>
