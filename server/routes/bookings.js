@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../lib/supabase');
+const db = require('../lib/db');
 
 // POST /api/bookings
 router.post('/', async (req, res) => {
@@ -26,13 +26,8 @@ router.post('/', async (req, res) => {
         }
 
         // 2) Check service exists
-        const { data: service, error: serviceError } = await supabase
-            .from("services")
-            .select("id")
-            .eq("id", serviceId)
-            .single();
-
-        if (serviceError || !service) {
+        const serviceResult = await db.query('SELECT id FROM services WHERE id = $1', [serviceId]);
+        if (serviceResult.rows.length === 0) {
             return res.status(404).json({
                 ok: false,
                 error: { code: "SERVICE_NOT_FOUND", message: "Service not found." },
@@ -40,13 +35,8 @@ router.post('/', async (req, res) => {
         }
 
         // 3) Check worker exists
-        const { data: worker, error: workerError } = await supabase
-            .from("workers")
-            .select("id")
-            .eq("id", workerId)
-            .single();
-
-        if (workerError || !worker) {
+        const workerResult = await db.query('SELECT id FROM workers WHERE id = $1', [workerId]);
+        if (workerResult.rows.length === 0) {
             return res.status(404).json({
                 ok: false,
                 error: { code: "WORKER_NOT_FOUND", message: "Worker not found." },
@@ -54,14 +44,12 @@ router.post('/', async (req, res) => {
         }
 
         // 4) Conflict check (same worker + same startTime)
-        const { data: conflict } = await supabase
-            .from("bookings")
-            .select("id")
-            .eq("worker_id", workerId)
-            .eq("start_time", startTime)
-            .single();
+        const conflictResult = await db.query(
+            'SELECT id FROM bookings WHERE worker_id = $1 AND start_time = $2',
+            [workerId, startTime]
+        );
 
-        if (conflict) {
+        if (conflictResult.rows.length > 0) {
             return res.status(409).json({
                 ok: false,
                 error: {
@@ -72,37 +60,35 @@ router.post('/', async (req, res) => {
         }
 
         // 5) Create new booking
-        const { data: newBooking, error: insertError } = await supabase
-            .from("bookings")
-            .insert({
-                service_id: Number(serviceId),
-                worker_id: Number(workerId),
-                start_time: startTime,
-                customer_full_name: customer.fullName,
-                customer_phone: customer.phone,
-                customer_email: customer.email,
-                notes: notes ?? "",
-                status: "CONFIRMED",
-            })
-            .select()
-            .single();
+        const insertResult = await db.query(
+            `INSERT INTO bookings 
+            (service_id, worker_id, start_time, customer_full_name, customer_phone, customer_email, notes, status) 
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+            RETURNING *`,
+            [
+                Number(serviceId),
+                Number(workerId),
+                startTime,
+                customer.fullName,
+                customer.phone,
+                customer.email,
+                notes ?? "",
+                "CONFIRMED"
+            ]
+        );
 
-        if (insertError) {
-            return res.status(500).json({
-                ok: false,
-                error: { code: "DB_ERROR", message: insertError.message },
-            });
-        }
+        const newBooking = insertResult.rows[0];
 
         // 6) Return success
         return res.status(201).json({
             ok: true,
             data: {
                 bookingId: newBooking.id,
-                status: "CONFIRMED",
+                status: newBooking.status,
             },
         });
     } catch (error) {
+        console.error("Error creating booking:", error);
         return res.status(500).json({
             ok: false,
             error: { code: "SERVER_ERROR", message: "Invalid JSON or Server Error" },

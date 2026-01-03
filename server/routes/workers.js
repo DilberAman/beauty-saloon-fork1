@@ -1,18 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../lib/supabase');
+const db = require('../lib/db');
 
 // GET /api/workers
 router.get('/', async (req, res) => {
     try {
-        const { data, error } = await supabase.from("workers").select("*");
-
-        if (error) {
-            return res.status(500).json({ ok: false, error: error.message });
-        }
-
-        return res.json({ ok: true, data });
+        const { rows } = await db.query("SELECT * FROM workers");
+        return res.json({ ok: true, data: rows });
     } catch (e) {
+        console.error("Error fetching workers:", e);
         return res.status(500).json({ ok: false, error: "Server Error" });
     }
 });

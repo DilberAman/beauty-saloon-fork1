@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { supabase } = require('../lib/supabase');
+const db = require('../lib/db');
 
 // GET /api/availability
 router.get('/', async (req, res) => {
@@ -19,13 +19,8 @@ router.get('/', async (req, res) => {
         }
 
         // 2) Check service exists
-        const { data: service, error: serviceError } = await supabase
-            .from("services")
-            .select("id")
-            .eq("id", serviceId)
-            .single();
-
-        if (serviceError || !service) {
+        const serviceResult = await db.query('SELECT id FROM services WHERE id = $1', [serviceId]);
+        if (serviceResult.rows.length === 0) {
             return res.status(404).json({
                 ok: false,
                 error: { code: "SERVICE_NOT_FOUND", message: "Service not found." },
@@ -34,13 +29,8 @@ router.get('/', async (req, res) => {
 
         // 3) If workerId provided, check worker exists
         if (workerId && workerId !== 'any') {
-            const { data: worker, error: workerError } = await supabase
-                .from("workers")
-                .select("id")
-                .eq("id", workerId)
-                .single();
-
-            if (workerError || !worker) {
+            const workerResult = await db.query('SELECT id FROM workers WHERE id = $1', [workerId]);
+            if (workerResult.rows.length === 0) {
                 return res.status(404).json({
                     ok: false,
                     error: { code: "WORKER_NOT_FOUND", message: "Worker not found." },
@@ -49,6 +39,7 @@ router.get('/', async (req, res) => {
         }
 
         // 4) Base slots (mock schedule)
+        // ideally this should be dynamic, but keeping original logic
         const baseSlots = [
             { start: `${date}T10:00:00+01:00`, end: `${date}T11:00:00+01:00` },
             { start: `${date}T12:00:00+01:00`, end: `${date}T13:00:00+01:00` },
@@ -59,38 +50,30 @@ router.get('/', async (req, res) => {
         const startOfDay = `${date}T00:00:00+01:00`;
         const endOfDay = `${date}T23:59:59+01:00`;
 
-        let query = supabase
-            .from("bookings")
-            .select("worker_id, start_time")
-            .gte("start_time", startOfDay)
-            .lte("start_time", endOfDay);
+        let query = `
+            SELECT worker_id, start_time 
+            FROM bookings 
+            WHERE start_time >= $1 AND start_time <= $2
+        `;
+        const params = [startOfDay, endOfDay];
 
         if (workerId && workerId !== 'any') {
-            query = query.eq("worker_id", workerId);
+            query += " AND worker_id = $3";
+            params.push(workerId);
         }
 
-        const { data: bookings, error: bookingsError } = await query;
-
-        if (bookingsError) {
-            return res.status(500).json({
-                ok: false,
-                error: { code: "DB_ERROR", message: bookingsError.message },
-            });
-        }
+        const { rows: bookings } = await db.query(query, params);
 
         const availableSlots = baseSlots.filter((slot) => {
+            const slotTime = new Date(slot.start).getTime();
+
             const isTaken = bookings?.some((b) => {
-                const sameStart = b.start_time === slot.start;
+                // Determine booking time
+                // node-postgres returns Date object for TIMESTAMP fields
+                const bookingTime = new Date(b.start_time).getTime();
+                const sameStart = bookingTime === slotTime;
+
                 const matchesWorker = (workerId && workerId !== 'any') ? b.worker_id === Number(workerId) : true;
-                // If worker is 'any', we technically need to check if ALL workers are booked for this slot, 
-                // but current logic in original code seemed simple. 
-                // For 'any', we shouldn't filter out unless ALL workers are busy.
-                // However, the original code logic was:
-                // const matchesWorker = workerId ? b.worker_id === Number(workerId) : true;
-                // If workerId is NOT provided (any), matchesWorker is true for ANY booking. 
-                // So if ANY booking exists at that time, it marks slot as taken.
-                // This implies "Single worker shop" or "Global slot system".
-                // I will preserve this logic.
 
                 return sameStart && matchesWorker;
             });
@@ -107,7 +90,7 @@ router.get('/', async (req, res) => {
         });
 
     } catch (e) {
-        console.error(e);
+        console.error("Error fetching availability:", e);
         return res.status(500).json({ ok: false, error: "Server Error" });
     }
 });
