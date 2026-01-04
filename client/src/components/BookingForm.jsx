@@ -162,7 +162,7 @@ export default function BookingForm() {
     }
 
     return (
-        <Card className="w-full max-w-lg mx-auto shadow-xl border-t-4 border-t-black">
+        <Card className="w-full max-w-lg mx-auto border-0 bg-white shadow-none">
             <CardHeader>
                 <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">Step {step} of 3</span>
