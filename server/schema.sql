@@ -1,17 +1,22 @@
+-- Drop tables if they exist to ensure fresh schema
+DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS services;
+DROP TABLE IF EXISTS workers;
+
 -- Create tables
 CREATE TABLE IF NOT EXISTS services (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     description TEXT,
-    price DECIMAL(10, 2) NOT NULL,
-    duration INTEGER NOT NULL, -- in minutes
+    price VARCHAR(50) NOT NULL, -- Changed to VARCHAR to support ranges
+    duration_min INTEGER NOT NULL, -- Renamed to match frontend expectation or aliased later
     image_url TEXT
 );
 
 CREATE TABLE IF NOT EXISTS workers (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    role VARCHAR(255) NOT NULL,
+    role VARCHAR(255),
     image_url TEXT
 );
 
@@ -28,13 +33,30 @@ CREATE TABLE IF NOT EXISTS bookings (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- Insert Seed Data
-INSERT INTO services (name, description, price, duration, image_url) VALUES 
-('Haircut', 'Standard haircut service', 30.00, 60, 'https://placehold.co/600x400'),
-('Manicure', 'Full manicure service', 25.00, 45, 'https://placehold.co/600x400'),
-('Facial', 'Relaxing facial treatment', 50.00, 60, 'https://placehold.co/600x400');
+-- Clean up existing data to avoid duplicates/conflicts on re-seed
+TRUNCATE TABLE bookings CASCADE;
+TRUNCATE TABLE services CASCADE;
+TRUNCATE TABLE workers CASCADE;
+-- Reset sequences
+ALTER SEQUENCE services_id_seq RESTART WITH 1;
+ALTER SEQUENCE workers_id_seq RESTART WITH 1;
+ALTER SEQUENCE bookings_id_seq RESTART WITH 1;
 
-INSERT INTO workers (name, role, image_url) VALUES 
-('Alice', 'Senior Stylist', 'https://placehold.co/400x400'),
-('Bob', 'Nail Artist', 'https://placehold.co/400x400'),
-('Charlie', 'Esthetician', 'https://placehold.co/400x400');
+-- Insert Seed Data
+INSERT INTO services (name, price, duration_min) VALUES 
+('Permanent makeup', '90-200', 120),
+('Facial treatments', '40-400', 60),
+('Nails', '20-60', 45),
+('Lash lift', '30-50', 45),
+('Lash extensions', '50-180', 90),
+('Pedicure', '20-60', 45);
+
+INSERT INTO workers (name) VALUES 
+('Abdullah'),
+('Ema'),
+('Džoana'),
+('Sabaheta'),
+('Dževad'),
+('Ruždija'),
+('Jakov'),
+('Umihana');

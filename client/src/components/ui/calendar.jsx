@@ -27,7 +27,7 @@ function Calendar({
         <DayPicker
             showOutsideDays={showOutsideDays}
             className={cn(
-                "bg-background group/calendar p-3 [--cell-size:2.5rem] [[data-slot=card-content]_&]:bg-transparent [[data-slot=popover-content]_&]:bg-transparent",
+                "bg-white group/calendar p-3 [--cell-size:2.8rem] text-base",
                 "rtl:**:[.rdp-button\\_next>svg]:rotate-180",
                 "rtl:**:[.rdp-button\\_previous>svg]:rotate-180",
                 className
@@ -39,9 +39,9 @@ function Calendar({
                 ...formatters,
             }}
             classNames={{
-                root: cn("w-fit", defaultClassNames.root),
+                root: cn("min-w-[320px] w-full border bg-white rounded-md shadow-sm p-3", defaultClassNames.root),
                 months: cn(
-                    "relative flex flex-col gap-4 md:flex-row",
+                    "relative flex flex-col gap-4 md:flex-row w-full justify-center",
                     defaultClassNames.months
                 ),
                 month: cn("relative flex w-full flex-col gap-4", defaultClassNames.month),
@@ -51,12 +51,12 @@ function Calendar({
                 ),
                 button_previous: cn(
                     buttonVariants({ variant: buttonVariant }),
-                    "h-[--cell-size] w-[--cell-size] select-none p-0 aria-disabled:opacity-50",
+                    "h-10 w-10 bg-transparent p-0 opacity-100 hover:bg-muted font-bold z-50",
                     defaultClassNames.button_previous
                 ),
                 button_next: cn(
                     buttonVariants({ variant: buttonVariant }),
-                    "h-[--cell-size] w-[--cell-size] select-none p-0 aria-disabled:opacity-50",
+                    "h-10 w-10 bg-transparent p-0 opacity-100 hover:bg-muted font-bold z-50",
                     defaultClassNames.button_next
                 ),
                 month_caption: cn(
@@ -136,14 +136,14 @@ function Calendar({
                 Chevron: ({ className, orientation, ...props }) => {
                     if (orientation === "left") {
                         return (
-                            <ChevronLeftIcon className={cn("size-4", className)} {...props} />
+                            <ChevronLeftIcon className={cn("size-6 font-bold text-foreground", className)} {...props} />
                         )
                     }
 
                     if (orientation === "right") {
                         return (
                             <ChevronRightIcon
-                                className={cn("size-4", className)}
+                                className={cn("size-6 font-bold text-foreground", className)}
                                 {...props}
                             />
                         )
