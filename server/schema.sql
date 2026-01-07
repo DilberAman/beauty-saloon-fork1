@@ -1,7 +1,10 @@
 -- Drop tables if they exist to ensure fresh schema
 DROP TABLE IF EXISTS bookings;
 DROP TABLE IF EXISTS services;
+DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS services;
 DROP TABLE IF EXISTS workers;
+DROP TABLE IF EXISTS users;
 
 -- Create tables
 CREATE TABLE IF NOT EXISTS services (
@@ -33,14 +36,25 @@ CREATE TABLE IF NOT EXISTS bookings (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Clean up existing data to avoid duplicates/conflicts on re-seed
 TRUNCATE TABLE bookings CASCADE;
 TRUNCATE TABLE services CASCADE;
 TRUNCATE TABLE workers CASCADE;
+TRUNCATE TABLE users CASCADE;
 -- Reset sequences
 ALTER SEQUENCE services_id_seq RESTART WITH 1;
 ALTER SEQUENCE workers_id_seq RESTART WITH 1;
+ALTER SEQUENCE workers_id_seq RESTART WITH 1;
 ALTER SEQUENCE bookings_id_seq RESTART WITH 1;
+ALTER SEQUENCE users_id_seq RESTART WITH 1;
 
 -- Insert Seed Data
 INSERT INTO services (name, price, duration_min) VALUES 
